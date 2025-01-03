@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iCAS Lab Paper Submission Deadline Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container {
+            padding: 2rem;
+            flex: 1;
+            text-align: left; 
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; 
+            margin-bottom: 1rem;
+        }
+        header {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .popup-form {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .form-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            width: 500px; /* Increased width */
+        }
+        .form-container input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .close-btn {
+            background-color: red;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .close-btn:hover {
+            background-color: #f44336;
+        }
+        .search-container {
+            margin-bottom: 1rem;
+        }
+        .filter-container {
+            margin-bottom: 1rem;
+        }
+        .search-container input {
+            width: 300px;
+            height: 30px;
+            padding: 5px 10px 5px 30px; 
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-image: url('https://cdn-icons-png.flaticon.com/512/54/54481.png');
+            background-repeat: no-repeat;
+            background-position: 10px center;
+            background-size: 16px 16px;
+        }
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            margin-top: auto;
+        }
+        footer a {
+            color: white;
+            text-decoration: none;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        .pagination button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .pagination button:hover {
+            background-color: #45a049;
+        }
+        .pagination button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .lab-logo {
+            height: 50px; 
+            margin-right: 1rem; 
+        }
+        .lab-name {
+            font-weight: bold;
+            font-size: 1.2rem; 
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>iCAS Lab Paper Submission Deadline Tracker</h1>
+    </header>
+    <div class="container">
+        <!-- Logo and Lab Name -->
+        <div class="logo-container">
+            <img src="icas_logo.png" alt="iCAS Lab Logo" class="lab-logo">
+            <h2 class="lab-name">Intelligent Circuits, Architectures and Systems Laboratory (iCAS)</h2>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search by Conference/Journal Name" oninput="applyFiltersAndSearch()">
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-container">
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate" onchange="applyFiltersAndSearch()">
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate" onchange="applyFiltersAndSearch()">
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Conference/Journal</th>
+                    <th>Website Link</th>
+                    <th>Submission Deadline</th>
+                    <th>Time Left</th>
+                </tr>
+            </thead>
+            <tbody id="papers-table-body">
+                <!-- New papers will appear here -->
+            </tbody>
+        </table>
+        <div class="pagination">
+            <button id="prevPage" onclick="prevPage()">Previous</button>
+            <span>Page <span id="currentPage">1</span> of <span id="totalPages">1</span></span>
+            <button id="nextPage" onclick="nextPage()">Next</button>
+        </div>
+    </div>
+
+    <!-- Popup Form -->
+    <div id="popupForm" class="popup-form">
+        <div class="form-container">
+            <h3>Add/Edit Paper</h3>
+            <input type="text" id="conference" placeholder="Conference/Journal Name" required />
+            <input type="text" id="website" placeholder="Website Link" required />
+            <input type="datetime-local" id="deadline" required />
+            <button onclick="savePaper()">Save Paper</button>
+            <button class="close-btn" onclick="closeForm()">Close</button>
+        </div>
+    </div>
+
+    <footer>
+        &copy; iCAS Lab Paper Tracker<br>
+        Contact: <a href="mailto:hu-fan@sjtu.edu.cn">hu-fan@sjtu.edu.cn</a>
+    </footer>
+
+    <script>
+        let papers = [
+            { conference: "LAD 2025", website: "https://www.islad.com", deadline: "2025-02-28T23:59:59" },
+            { conference: "ISEDA 2025", website: "https://www.eda2.com/iseda/index.html", deadline: "2025-02-10T23:59:59" },
+            { conference: "DATE 2025", website: "https://www.date-conference.com", deadline: "2024-09-15T23:59:59" }
+        ];
+        let editingIndex = null;
+        let filteredPapers = papers;
+        let currentPage = 1;
+        const itemsPerPage = 10;
+    
+        function openForm() {
+            document.getElementById("popupForm").style.display = "flex";
+            document.getElementById("conference").value = editingIndex !== null ? papers[editingIndex].conference : "";
+            document.getElementById("website").value = editingIndex !== null ? papers[editingIndex].website : "";
+            document.getElementById("deadline").value = editingIndex !== null ? papers[editingIndex].deadline : "";
+        }
+    
+        function closeForm() {
+            document.getElementById("popupForm").style.display = "none";
+            editingIndex = null;
+        }
+    
+        function savePaper() {
+            const conference = document.getElementById("conference").value;
+            const website = document.getElementById("website").value;
+            const deadline = document.getElementById("deadline").value;
+    
+            if (!conference || !website || !deadline) {
+                alert("Please fill in all fields!");
+                return;
+            }
+    
+            const newPaper = { conference, website, deadline };
+            if (editingIndex !== null) {
+                papers[editingIndex] = newPaper;
+                editingIndex = null;
+            } else {
+                papers.push(newPaper);
+            }
+            localStorage.setItem("papers", JSON.stringify(papers));
+            applyFiltersAndSearch();
+            closeForm();
+        }
+    
+        function renderTable(filteredPapers) {
+            const tableBody = document.getElementById("papers-table-body");
+            tableBody.innerHTML = "";
+    
+            const totalPages = Math.ceil(filteredPapers.length / itemsPerPage);
+            document.getElementById("totalPages").textContent = totalPages;
+    
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const currentPapers = filteredPapers.slice(startIndex, endIndex);
+    
+            currentPapers.forEach((paper, index) => {
+                const deadlineParts = paper.deadline.split('T');
+                const formattedDeadline = deadlineParts.join(' ');
+    
+                const timeLeft = getTimeLeft(paper.deadline);
+                const timeLeftElement = document.createElement('td');
+                timeLeftElement.textContent = timeLeft;
+                timeLeftElement.style.color = timeLeft === "Deadline Passed" ? "red" : "green";
+    
+                const row = `
+                    <tr>
+                        <td>${paper.conference}</td>
+                        <td><a href="${paper.website}" target="_blank">${paper.website}</a></td>
+                        <td>${formattedDeadline}</td>
+                    </tr>`;
+                const rowElement = document.createElement('tr');
+                rowElement.innerHTML = row;
+                rowElement.appendChild(timeLeftElement);
+    
+                tableBody.appendChild(rowElement);
+            });
+    
+            document.getElementById("currentPage").textContent = currentPage;
+            document.getElementById("prevPage").disabled = currentPage === 1;
+            document.getElementById("nextPage").disabled = currentPage === totalPages;
+        }
+    
+        function applyFiltersAndSearch() {
+            const startDate = new Date(document.getElementById("startDate").value);
+            const endDate = new Date(document.getElementById("endDate").value);
+            const query = document.getElementById("searchInput").value.toLowerCase();
+    
+            filteredPapers = papers.filter(paper => {
+                const deadlineDate = new Date(paper.deadline);
+                const dateCondition = (!isNaN(startDate) ? deadlineDate >= startDate : true) &&
+                                     (!isNaN(endDate) ? deadlineDate <= endDate : true);
+                const searchCondition = paper.conference.toLowerCase().includes(query) || paper.website.toLowerCase().includes(query);
+                return dateCondition && searchCondition;
+            });
+    
+            // Sort filteredPapers by deadline in descending order
+            filteredPapers.sort((a, b) => new Date(b.deadline) - new Date(a.deadline));
+    
+            currentPage = 1; // Reset current page
+            renderTable(filteredPapers);
+        }
+    
+        function deletePaper(index) {
+            papers.splice(index, 1);
+            localStorage.setItem("papers", JSON.stringify(papers));
+            applyFiltersAndSearch();
+        }
+    
+        function editPaper(index) {
+            editingIndex = index;
+            openForm();
+        }
+    
+        function getTimeLeft(deadline) {
+            const now = new Date();
+            const diff = new Date(deadline) - now;
+            if (diff <= 0) return "Deadline Passed";
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+        }
+    
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable(filteredPapers);
+            }
+        }
+    
+        function nextPage() {
+            const totalPages = Math.ceil(filteredPapers.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable(filteredPapers);
+            }
+        }
+    
+        // Initialize the table
+        applyFiltersAndSearch();
+        setInterval(() => {
+            applyFiltersAndSearch();
+        }, 1000);
+    </script>
+</body>
+</html>
