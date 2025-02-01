@@ -159,6 +159,7 @@
 
         <!-- Filter Section -->
         <div class="filter-container">
+            <label for="deadlineSearching">Deadline Searching:</label>
             <label for="startDate">Start Date:</label>
             <input type="date" id="startDate" onchange="applyFiltersAndSearch()">
             <label for="endDate">End Date:</label>
@@ -170,7 +171,9 @@
                 <tr>
                     <th>Conference/Journal</th>
                     <th>Website Link</th>
-                    <th>Submission Deadline</th>
+                    <th>Location</th>
+                    <th>Conference Time</th>
+                    <th>Regular Paper Submission Deadline</th>
                     <th>Time Left</th>
                 </tr>
             </thead>
@@ -191,6 +194,8 @@
             <h3>Add/Edit Paper</h3>
             <input type="text" id="conference" placeholder="Conference/Journal Name" required />
             <input type="text" id="website" placeholder="Website Link" required />
+            <input type="text" id="location" placeholder="Location" required />
+            <input type="text" id="conferenceTime" placeholder="Conference Time" required />
             <input type="datetime-local" id="deadline" required />
             <button onclick="savePaper()">Save Paper</button>
             <button class="close-btn" onclick="closeForm()">Close</button>
@@ -204,9 +209,10 @@
 
     <script>
         let papers = [
-            { conference: "LAD 2025", website: "https://www.islad.com", deadline: "2025-02-28T23:59:59" },
-            { conference: "ISEDA 2025", website: "https://www.eda2.com/iseda/index.html", deadline: "2025-02-10T23:59:59" },
-            { conference: "DATE 2025", website: "https://www.date-conference.com", deadline: "2024-09-15T23:59:59" }
+            { conference: "IEEE International Conference on LLM-Aided Design, 2025 (LAD'25)", location: "Stanford, CA, USA", website: "https://iclad.ai/", deadline: "2025-02-28", conferenceTime: "2025-03-10 to 2025-03-12" },
+            { conference: "International Symposium of EDA, 2025 (ISEDA'25)", location: "Hong Kong Disneyland, China", website: "https://www.eda2.com/iseda/index.html", deadline: "2025-02-10", conferenceTime: "2025-05-09 to 2025-05-12" },
+            { conference: "Great Lakes Symposium on VLSI, 2025 (GLSVLSI'25)", location: "New Orleans, LA, USA", website: "https://www.glsvlsi.org/", deadline: "2025-02-21", conferenceTime: "2025-06-30 to 2025-07-02" },
+            { conference: "IEEE/ACM International Symposium on Low Power Electronics and Design, 2025 (ISLPED'25)", location: "University of Iceland, Iceland", website: "https://www.islped.org/2025/", deadline: "2025-03-10", conferenceTime: "2025-08-06 to 2025-08-08" }
         ];
         let editingIndex = null;
         let filteredPapers = papers;
@@ -217,6 +223,8 @@
             document.getElementById("popupForm").style.display = "flex";
             document.getElementById("conference").value = editingIndex !== null ? papers[editingIndex].conference : "";
             document.getElementById("website").value = editingIndex !== null ? papers[editingIndex].website : "";
+            document.getElementById("location").value = editingIndex !== null ? papers[editingIndex].location : "";
+            document.getElementById("conferenceTime").value = editingIndex !== null ? papers[editingIndex].conferenceTime : "";
             document.getElementById("deadline").value = editingIndex !== null ? papers[editingIndex].deadline : "";
         }
     
@@ -228,14 +236,16 @@
         function savePaper() {
             const conference = document.getElementById("conference").value;
             const website = document.getElementById("website").value;
+            const location = document.getElementById("location").value;
+            const conferenceTime = document.getElementById("conferenceTime").value;
             const deadline = document.getElementById("deadline").value;
     
-            if (!conference || !website || !deadline) {
+            if (!conference || !website || !location || !conferenceTime || !deadline) {
                 alert("Please fill in all fields!");
                 return;
             }
     
-            const newPaper = { conference, website, deadline };
+            const newPaper = { conference, website, location, conferenceTime, deadline };
             if (editingIndex !== null) {
                 papers[editingIndex] = newPaper;
                 editingIndex = null;
@@ -271,6 +281,8 @@
                     <tr>
                         <td>${paper.conference}</td>
                         <td><a href="${paper.website}" target="_blank">${paper.website}</a></td>
+                        <td>${paper.location}</td>
+                        <td>${paper.conferenceTime}</td>
                         <td>${formattedDeadline}</td>
                     </tr>`;
                 const rowElement = document.createElement('tr');
@@ -294,12 +306,19 @@
                 const deadlineDate = new Date(paper.deadline);
                 const dateCondition = (!isNaN(startDate) ? deadlineDate >= startDate : true) &&
                                      (!isNaN(endDate) ? deadlineDate <= endDate : true);
-                const searchCondition = paper.conference.toLowerCase().includes(query) || paper.website.toLowerCase().includes(query);
+                const searchCondition = paper.conference.toLowerCase().includes(query) || 
+                                        paper.website.toLowerCase().includes(query) || 
+                                        paper.location.toLowerCase().includes(query) || 
+                                        paper.conferenceTime.toLowerCase().includes(query);
                 return dateCondition && searchCondition;
             });
     
-            // Sort filteredPapers by deadline in descending order
-            filteredPapers.sort((a, b) => new Date(b.deadline) - new Date(a.deadline));
+            // Sort filteredPapers by time left in ascending order
+            filteredPapers.sort((a, b) => {
+                const timeLeftA = new Date(a.deadline) - new Date();
+                const timeLeftB = new Date(b.deadline) - new Date();
+                return timeLeftA - timeLeftB;
+            });
     
             currentPage = 1; // Reset current page
             renderTable(filteredPapers);
