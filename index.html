@@ -169,12 +169,19 @@
         <table>
             <thead>
                 <tr>
+                    <th colspan="8" style="text-align: center; font-weight: normal;">
+                        Notes: The tracking table is sorted by Regular Paper Submission Deadline, with the closest deadlines first.
+                    </th>
+                </tr>
+                <tr>
                     <th>Conference/Journal</th>
                     <th>Website Link</th>
                     <th>Location</th>
                     <th>Conference Time</th>
-                    <th>Regular Paper Submission Deadline</th>
-                    <th>Time Left</th>
+                    <th>Full Paper Submission Deadline</th>
+                    <th>Abstract Submission Deadline</th>
+                    <th>Time Left (Full Paper)</th>
+                    <th>Time Left (Abstract)</th>
                 </tr>
             </thead>
             <tbody id="papers-table-body">
@@ -197,6 +204,7 @@
             <input type="text" id="location" placeholder="Location" required />
             <input type="text" id="conferenceTime" placeholder="Conference Time" required />
             <input type="datetime-local" id="deadline" required />
+            <input type="datetime-local" id="abstractDeadline" placeholder="Abstract Submission Deadline" required />
             <button onclick="savePaper()">Save Paper</button>
             <button class="close-btn" onclick="closeForm()">Close</button>
         </div>
@@ -209,10 +217,10 @@
 
     <script>
         let papers = [
-            { conference: "IEEE International Conference on LLM-Aided Design, 2025 (LAD'25)", location: "Stanford, CA, USA", website: "https://iclad.ai/", deadline: "2025-02-28", conferenceTime: "2025-03-10 to 2025-03-12" },
-            { conference: "International Symposium of EDA, 2025 (ISEDA'25)", location: "Hong Kong Disneyland, China", website: "https://www.eda2.com/iseda/index.html", deadline: "2025-02-10", conferenceTime: "2025-05-09 to 2025-05-12" },
-            { conference: "Great Lakes Symposium on VLSI, 2025 (GLSVLSI'25)", location: "New Orleans, LA, USA", website: "https://www.glsvlsi.org/", deadline: "2025-02-21", conferenceTime: "2025-06-30 to 2025-07-02" },
-            { conference: "IEEE/ACM International Symposium on Low Power Electronics and Design, 2025 (ISLPED'25)", location: "University of Iceland, Iceland", website: "https://www.islped.org/2025/", deadline: "2025-03-10", conferenceTime: "2025-08-06 to 2025-08-08" }
+            { conference: "IEEE International Conference on LLM-Aided Design, 2025 (LAD'25)", location: "Stanford, CA, USA", website: "https://iclad.ai/", deadline: "2025-02-28", abstractDeadline: "2025-02-28", conferenceTime: "2025-03-10 to 2025-03-12" },
+            { conference: "International Symposium of EDA, 2025 (ISEDA'25)", location: "Hong Kong Disneyland, China", website: "https://www.eda2.com/iseda/index.html", deadline: "2025-02-10", abstractDeadline: "2025-02-10", conferenceTime: "2025-05-09 to 2025-05-12" },
+            { conference: "Great Lakes Symposium on VLSI, 2025 (GLSVLSI'25)", location: "New Orleans, LA, USA", website: "https://www.glsvlsi.org/", deadline: "2025-02-21", abstractDeadline: "2025-02-21", conferenceTime: "2025-06-30 to 2025-07-02" },
+            { conference: "IEEE/ACM International Symposium on Low Power Electronics and Design, 2025 (ISLPED'25)", location: "University of Iceland, Iceland", website: "https://www.islped.org/2025/", deadline: "2025-03-10", abstractDeadline: "2025-03-03", conferenceTime: "2025-08-06 to 2025-08-08" }
         ];
         let editingIndex = null;
         let filteredPapers = papers;
@@ -226,6 +234,7 @@
             document.getElementById("location").value = editingIndex !== null ? papers[editingIndex].location : "";
             document.getElementById("conferenceTime").value = editingIndex !== null ? papers[editingIndex].conferenceTime : "";
             document.getElementById("deadline").value = editingIndex !== null ? papers[editingIndex].deadline : "";
+            document.getElementById("abstractDeadline").value = editingIndex !== null ? papers[editingIndex].abstractDeadline : "";
         }
     
         function closeForm() {
@@ -239,13 +248,14 @@
             const location = document.getElementById("location").value;
             const conferenceTime = document.getElementById("conferenceTime").value;
             const deadline = document.getElementById("deadline").value;
+            const abstractDeadline = document.getElementById("abstractDeadline").value;
     
-            if (!conference || !website || !location || !conferenceTime || !deadline) {
+            if (!conference || !website || !location || !conferenceTime || !deadline || !abstractDeadline) {
                 alert("Please fill in all fields!");
                 return;
             }
     
-            const newPaper = { conference, website, location, conferenceTime, deadline };
+            const newPaper = { conference, website, location, conferenceTime, deadline, abstractDeadline };
             if (editingIndex !== null) {
                 papers[editingIndex] = newPaper;
                 editingIndex = null;
@@ -271,12 +281,13 @@
             currentPapers.forEach((paper, index) => {
                 const deadlineParts = paper.deadline.split('T');
                 const formattedDeadline = deadlineParts.join(' ');
-    
-                const timeLeft = getTimeLeft(paper.deadline);
-                const timeLeftElement = document.createElement('td');
-                timeLeftElement.textContent = timeLeft;
-                timeLeftElement.style.color = timeLeft === "Deadline Passed" ? "red" : "green";
-    
+
+                const abstractDeadlineParts = paper.abstractDeadline.split('T');
+                const formattedAbstractDeadline = abstractDeadlineParts.join(' ');
+
+                const timeLeftFullPaper = getTimeLeft(paper.deadline);
+                const timeLeftAbstract = getTimeLeft(paper.abstractDeadline);
+
                 const row = `
                     <tr>
                         <td>${paper.conference}</td>
@@ -284,12 +295,11 @@
                         <td>${paper.location}</td>
                         <td>${paper.conferenceTime}</td>
                         <td>${formattedDeadline}</td>
+                        <td>${formattedAbstractDeadline}</td>
+                        <td style="color: ${timeLeftFullPaper === "Deadline Passed" ? "red" : "green"}">${timeLeftFullPaper}</td>
+                        <td style="color: ${timeLeftAbstract === "Deadline Passed" ? "red" : "green"}">${timeLeftAbstract}</td>
                     </tr>`;
-                const rowElement = document.createElement('tr');
-                rowElement.innerHTML = row;
-                rowElement.appendChild(timeLeftElement);
-    
-                tableBody.appendChild(rowElement);
+                tableBody.innerHTML += row;
             });
     
             document.getElementById("currentPage").textContent = currentPage;
@@ -304,8 +314,11 @@
     
             filteredPapers = papers.filter(paper => {
                 const deadlineDate = new Date(paper.deadline);
+                const abstractDeadlineDate = new Date(paper.abstractDeadline);
                 const dateCondition = (!isNaN(startDate) ? deadlineDate >= startDate : true) &&
-                                     (!isNaN(endDate) ? deadlineDate <= endDate : true);
+                                     (!isNaN(endDate) ? deadlineDate <= endDate : true) &&
+                                     (!isNaN(startDate) ? abstractDeadlineDate >= startDate : true) &&
+                                     (!isNaN(endDate) ? abstractDeadlineDate <= endDate : true);
                 const searchCondition = paper.conference.toLowerCase().includes(query) || 
                                         paper.website.toLowerCase().includes(query) || 
                                         paper.location.toLowerCase().includes(query) || 
