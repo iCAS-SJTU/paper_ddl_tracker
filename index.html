@@ -228,12 +228,13 @@
             { conference: "The International Conference on Field Programmable Technology, 2025 (FPT'25) - Journal Track", location: "Shanghai, China", website: "https://fpt2025.shanghaitech.edu.cn/", deadline: "2025-06-16", abstractDeadline: "2025-06-16", conferenceTime: "2025-12-02 to 2025-12-05" },
             { conference: "The International Conference on Field Programmable Technology, 2025 (FPT'25) - Conference Track", location: "Shanghai, China", website: "https://fpt2025.shanghaitech.edu.cn/", deadline: "2025-07-23", abstractDeadline: "2025-07-14", conferenceTime: "2025-12-02 to 2025-12-05" },
             { conference: "IEEE International Symposium on Circuits and Systems, 2026 (ISCAS'26)", location: "Shanghai, China", website: "https://2026.ieee-iscas.org/", deadline: "2025-10-12", abstractDeadline: "2025-10-12", conferenceTime: "2026-05-24 to 2026-05-27" },
-            { conference: "IEEE International Symposium on High-Performance Computer Architecture, 2026 (HPCA'26)", location: "Sydney, NSW, Australia", website: "https://hpca-conf.org/2026/call-for-papers/", deadline: "2025-08-01", abstractDeadline: "2025-07-25", conferenceTime: "Not Announced Yet" }
+            { conference: "IEEE International Symposium on High-Performance Computer Architecture, 2026 (HPCA'26)", location: "Sydney, NSW, Australia", website: "https://hpca-conf.org/2026/call-for-papers/", deadline: "2025-08-01", abstractDeadline: "2025-07-25", conferenceTime: "Not Announced Yet" },
+            { conference: "Asia and South Pacific Design Automation Conference, 2026 (ASP-DAC'26)", location: "Hong Kong Disneyland, China", website: "https://www.aspdac.com/aspdac2026/cfp/ASPDAC2026-CFP_v1.pdf", deadline: "2025-07-11", abstractDeadline: "2025-07-04", conferenceTime: "2026-01-19 to  2026-01-22" },
         ];
         let editingIndex = null;
         let filteredPapers = papers;
         let currentPage = 1;
-        const itemsPerPage = 20;
+        const itemsPerPage = 10;
     
         function openForm() {
             document.getElementById("popupForm").style.display = "flex";
@@ -312,7 +313,7 @@
     
             document.getElementById("currentPage").textContent = currentPage;
             document.getElementById("prevPage").disabled = currentPage === 1;
-            document.getElementById("nextPage").disabled = currentPage === totalPages;
+            document.getElementById("nextPage").disabled = currentPage === totalPages || totalPages === 0;
         }
     
         function applyFiltersAndSearch() {
@@ -334,14 +335,28 @@
                 return dateCondition && searchCondition;
             });
     
-            // Sort filteredPapers by time left in ascending order
+            // Sort filteredPapers with upcoming deadlines first (closest first), then passed deadlines (most recent first)
             filteredPapers.sort((a, b) => {
-                const timeLeftA = new Date(a.deadline) - new Date();
-                const timeLeftB = new Date(b.deadline) - new Date();
-                return timeLeftA - timeLeftB;
+                const now = new Date();
+                const deadlineA = new Date(a.deadline);
+                const deadlineB = new Date(b.deadline);
+                
+                // Check if deadlines have passed
+                const aPassed = deadlineA < now;
+                const bPassed = deadlineB < now;
+                
+                if (aPassed && !bPassed) return 1; // b comes first
+                if (!aPassed && bPassed) return -1; // a comes first
+                if (aPassed && bPassed) return deadlineB - deadlineA; // both passed, sort by most recent first
+                return deadlineA - deadlineB; // both upcoming, sort by closest first
             });
     
-            currentPage = 1; // Reset current page
+            // Only reset to page 1 if the filtered results have changed significantly
+            const totalPages = Math.ceil(filteredPapers.length / itemsPerPage);
+            if (currentPage > totalPages) {
+                currentPage = 1;
+            }
+            
             renderTable(filteredPapers);
         }
     
@@ -385,7 +400,7 @@
         // Initialize the table
         applyFiltersAndSearch();
         setInterval(() => {
-            applyFiltersAndSearch();
+            renderTable(filteredPapers); // Only re-render without re-filtering to preserve pagination
         }, 1000);
     </script>
 </body>
